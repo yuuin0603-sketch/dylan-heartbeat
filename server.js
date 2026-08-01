@@ -99,8 +99,21 @@ function normalizeContentToText(content) {
 }
 
 function normalizeMessageForTimeline(msg) {
-  return { ...msg, content: normalizeContentToText(msg.content) };
+  const text = normalizeContentToText(msg.content);
+  if (msg.role === "user" && !parseTimestampLabel(text)) {
+    const now = new Date();
+    const tz = process.env.TIME_ZONE || "Asia/Shanghai";
+    const formatter = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    });
+    const parts = Object.fromEntries(formatter.formatToParts(now).map(p => [p.type, p.value]));
+    const timePrefix = parts.year + "-" + parts.month + "-" + parts.day + " " + parts.hour + ":" + parts.minute;
+    return { ...msg, content: timePrefix + " " + text };
+  }
+  return { ...msg, content: text };
 }
+
 
 function prepareMessageForLLM(msg) {
   if (msg.role === "assistant" && msg.tool_calls) return msg;
