@@ -6,8 +6,17 @@ const path = require("path");
 const ACTIVITY_FILE = path.join(__dirname, "last_user_activity.json");
 const TIMELINE_FILE = path.join(__dirname, "enhanced_messages.json");
 
+const TIME_ZONE = process.env.TIME_ZONE || "Asia/Shanghai";
+
+function getLocalTimeString() {
+  return new Date().toLocaleString("sv-SE", { timeZone: TIME_ZONE }).replace(" ", "T");
+}
+
 function recordUserActivity() {
-  const data = { last_activity: new Date().toISOString() };
+  const data = {
+    last_activity: new Date().toISOString(),
+    last_activity_local: getLocalTimeString()
+  };
   fs.writeFileSync(ACTIVITY_FILE, JSON.stringify(data), "utf-8");
 }
 
@@ -32,4 +41,17 @@ function getLastUserActivity() {
   return null;
 }
 
-module.exports = { recordUserActivity, getLastUserActivity };
+function getLastUserActivityLocal() {
+  try {
+    if (fs.existsSync(ACTIVITY_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(ACTIVITY_FILE, "utf-8"));
+      if (raw.last_activity_local) return raw.last_activity_local;
+    }
+  } catch {}
+  // 回退：用 UTC 时间转本地
+  const d = getLastUserActivity();
+  if (d) return d.toLocaleString("sv-SE", { timeZone: TIME_ZONE }).replace(" ", "T");
+  return null;
+}
+
+module.exports = { recordUserActivity, getLastUserActivity, getLastUserActivityLocal };
