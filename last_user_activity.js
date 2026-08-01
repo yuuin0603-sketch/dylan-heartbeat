@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ACTIVITY_FILE = path.join(__dirname, "last_user_activity.json");
+const TIMELINE_FILE = path.join(__dirname, "enhanced_messages.json");
 
 function recordUserActivity() {
   const data = { last_activity: new Date().toISOString() };
@@ -11,11 +12,23 @@ function recordUserActivity() {
 }
 
 function getLastUserActivity() {
+  // 方式1：读取显式记录的活动文件
   try {
-    if (!fs.existsSync(ACTIVITY_FILE)) return null;
-    const raw = JSON.parse(fs.readFileSync(ACTIVITY_FILE, "utf-8"));
-    if (raw.last_activity) return new Date(raw.last_activity);
+    if (fs.existsSync(ACTIVITY_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(ACTIVITY_FILE, "utf-8"));
+      if (raw.last_activity) return new Date(raw.last_activity);
+    }
   } catch {}
+
+  // 方式2：用 enhanced_messages.json 的文件修改时间作为回退
+  // 每次 Kelivo 发消息，server.js 都会 saveTimeline() 更新这个文件
+  try {
+    if (fs.existsSync(TIMELINE_FILE)) {
+      const stat = fs.statSync(TIMELINE_FILE);
+      return stat.mtime;
+    }
+  } catch {}
+
   return null;
 }
 
