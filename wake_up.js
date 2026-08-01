@@ -9,7 +9,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const GATEWAY_BASE_URL = (process.env.GATEWAY_BASE_URL || `http://localhost:${PORT}`).replace(/\/+$/, "");
 const GATEWAY_URL = `${GATEWAY_BASE_URL}/internal/wake-event`;
 const HEARTBEAT_URL = `${GATEWAY_BASE_URL}/internal/heartbeat`;
-const TIME_ZONE = process.env.TIME_ZONE || "Europe/London";
+const TIME_ZONE = process.env.TIME_ZONE || "Asia/Shanghai";
 const WEATHER_TIMEOUT_MS = 5000;
 const DIARY_DIR_NAME = process.env.DIARY_DIR || "diary";
 const DIARY_DIR_PATH = path.isAbsolute(DIARY_DIR_NAME)
@@ -48,6 +48,11 @@ function getDatePartsInTimeZone(date = new Date()) {
     hour: parts.hour,
     minute: parts.minute
   };
+}
+
+function getHourInTimeZone(date = new Date()) {
+  const parts = getDatePartsInTimeZone(date);
+  return Number(parts.hour);
 }
 
 function getDiaryDateString(date = new Date()) {
@@ -157,7 +162,7 @@ async function sendPushNotification({ title, body }) {
 }
 
 function isDayTime(date = new Date()) {
-  const hour = date.getHours();
+  const hour = getHourInTimeZone(date);
   const start = readNumberEnv("WAKE_DAY_START_HOUR", 10, { min: 0, max: 23 });
   const end = readNumberEnv("WAKE_DAY_END_HOUR", 24, { min: 1, max: 24 });
   if (start === end) return true;
@@ -324,14 +329,8 @@ function getChinaTimeString() {
 }
 
 function getLocalTimeString() {
-  const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const yyyy = now.getFullYear();
-  const mm = pad(now.getMonth() + 1);
-  const dd = pad(now.getDate());
-  const hh = pad(now.getHours());
-  const min = pad(now.getMinutes());
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+  const parts = getDatePartsInTimeZone(new Date());
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
 function shouldWake(lastUserTime) {
