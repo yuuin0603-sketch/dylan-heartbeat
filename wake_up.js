@@ -16,6 +16,24 @@ const DIARY_DIR_PATH = path.isAbsolute(DIARY_DIR_NAME)
   ? DIARY_DIR_NAME
   : path.join(__dirname, DIARY_DIR_NAME);
 
+// ========================
+// Keep-alive: 每4分钟 ping gateway，防止 Render 免费版休眠
+// ========================
+const KEEP_ALIVE_INTERVAL_MS = 4 * 60 * 1000;
+const KEEP_ALIVE_URL = `${GATEWAY_BASE_URL}/v1/models`;
+
+function startKeepAlive() {
+  async function ping() {
+    try {
+      await fetch(KEEP_ALIVE_URL);
+    } catch {}
+  }
+  setInterval(ping, KEEP_ALIVE_INTERVAL_MS);
+  // 立即 ping 一次确保 gateway 活着
+  ping();
+  console.log(`🫀 Keep-alive 已启动，每4分钟 ping ${KEEP_ALIVE_URL}`);
+}
+
 function readNumberEnv(key, fallback, options = {}) {
   const value = Number(process.env[key]);
   const min = options.min ?? -Infinity;
@@ -616,8 +634,11 @@ async function scheduleNextCheck() {
   setTimeout(scheduleNextCheck, getCheckIntervalMs());
 }
 
+// 启动 keep-alive 防休眠
+startKeepAlive();
+
 setTimeout(scheduleNextCheck, 10_000);
 
 console.log("\n==================================");
-console.log("Dylan Heartbeat Runtime 已启动（动态间隔）");
+console.log("Dylan Heartbeat Runtime 已启动（动态间隔 + keep-alive 防休眠）");
 console.log("==================================\n");
