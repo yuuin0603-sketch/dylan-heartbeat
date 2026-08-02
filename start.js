@@ -3,7 +3,10 @@
  * 作用：在 server.js 启动前，monkey-patch normalizeMessageForTimeline 函数，
  * 让网关自动给没有时间前缀的 user 消息补上当前时间。
  * 
- * Render 启动命令改为：node start.js
+ * 同时在同一进程中启动 wake_up.js 的定时唤醒逻辑，
+ * 避免 Render 免费版后台进程被杀导致唤醒失效。
+ * 
+ * Render 启动命令：node start.js
  */
 
 const fs = require("fs");
@@ -47,3 +50,9 @@ if (serverCode.includes(oldFn)) {
   console.log("⚠️ 未找到需要 patch 的函数，直接启动原版 server.js");
   require(serverPath);
 }
+
+// ========================
+// 在同一进程中启动 wake_up.js 的唤醒定时器
+// ========================
+console.log("🫀 正在启动唤醒模块...");
+require("./wake_up");
